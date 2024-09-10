@@ -6,7 +6,9 @@ data class MainScreenState(
     val isPlaying: Boolean = false,
     val isRecording: Boolean = false,
     val recordingFile: File? = null,
-    val error: String? = null
+    val recordingFileDuration: Int? = null,
+    val error: String? = null,
+    val waveformData: List<Int> = emptyList()
 )
 
 sealed class MainScreenEvents {

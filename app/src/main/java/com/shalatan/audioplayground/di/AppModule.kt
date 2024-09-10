@@ -8,6 +8,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import linc.com.amplituda.Amplituda
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -21,5 +22,10 @@ object AppModule {
     @Provides
     fun provideAudioPlayer(@ApplicationContext context: Context): AudioPlayerImpl {
         return AudioPlayerImpl(context)
+    }
+
+    @Provides
+    fun provideAmplituda(@ApplicationContext context: Context): Amplituda {
+        return Amplituda(context)
     }
 }
