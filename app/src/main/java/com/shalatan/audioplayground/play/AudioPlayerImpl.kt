@@ -2,6 +2,7 @@ package com.shalatan.audioplayground.play
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
 import java.io.File
@@ -21,6 +22,19 @@ class AudioPlayerImpl(
                 onAutoCompleted()
             }
             start()
+        }
+    }
+
+    override fun playUri(uri: Uri) {
+        MediaPlayer().apply {
+            setDataSource(context, uri)
+            prepare()
+            _duration = duration
+            setOnCompletionListener {
+                onAutoCompleted()
+            }
+            start()
+            player = this
         }
     }
 

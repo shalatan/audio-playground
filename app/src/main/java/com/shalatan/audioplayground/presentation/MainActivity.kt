@@ -2,6 +2,7 @@ package com.shalatan.audioplayground.presentation
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,52 +71,86 @@ fun MainScreen(modifier: Modifier = Modifier) {
     val viewModel: MainViewModel = hiltViewModel()
 
     val state by viewModel.state.collectAsState()
-    val currentDuration by viewModel.currentDuration.collectAsState()
-    val waveformState by viewModel.waveformProgress.collectAsState()
-
-    Log.e("Something: ", "currentState: $state")
-    Log.e("Something: ", "waveFormState: $waveformState")
-
-    var waveformProgress by remember { mutableFloatStateOf(waveformState) }
-
+    Log.d("Something: ", "state: $state")
     Column(
         modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.weight(1f))
+        AudioPlayerScreen(
+            modifier = Modifier.weight(2.5f),
+            state = state,
+            viewModel = viewModel
+        )
+        AudioRecorderScreen(
+            modifier = Modifier
+                .weight(1f)
+                .background(Color.DarkGray),
+            state = state,
+            viewModel = viewModel
+        )
+    }
+}
+
+@Composable
+fun AudioPlayerScreen(
+    modifier: Modifier = Modifier, state: MainScreenState, viewModel: MainViewModel
+) {
+    val pickAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            viewModel.processEvents(MainScreenEvents.UriFetched(uri = uri))
+        }
+    }
+
+    val currentDuration by viewModel.currentDuration.collectAsState()
+    val waveformState by viewModel.waveformProgress.collectAsState()
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         Text(
-            modifier = Modifier.padding(bottom = 32.dp), text = "Name: ${state.recordingFile?.name}"
+            modifier = Modifier.padding(bottom = 32.dp), text = "Name: ${state.fileName}"
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(enabled = state.recordingFile != null && !state.isRecording, onClick = {
+            Button(
+                enabled = !state.isRecording,
+                onClick = {
+                    viewModel.processEvents(MainScreenEvents.ImportClicked)
+                    pickAudioLauncher.launch("audio/*")
+                }) {
+                Text(text = "Import")
+            }
+            Button(enabled = !state.isRecording, onClick = {
                 viewModel.processEvents(MainScreenEvents.PlayClicked)
             }) {
-                Text(text = "Play")
+                Text(text = if (state.isPlaying) "Playing" else "Play")
             }
-            Button(onClick = {
+            Button(enabled = !state.isRecording, onClick = {
                 viewModel.processEvents(MainScreenEvents.StopClicked)
             }) {
                 Text(text = "Stop")
             }
         }
-        Spacer(modifier = Modifier.weight(1f))
-        Log.e("Something: ", " waveform: $waveformProgress")
         AudioWaveform(modifier = Modifier
-            .fillMaxSize()
-            .height(128.dp)
-            .padding(top = 32.dp),
+            .fillMaxWidth()
+            .padding(bottom = 32.dp),
             amplitudes = state.waveformData,
             progress = waveformState,
             progressBrush = SolidColor(Color.Magenta),
             waveformBrush = SolidColor(Color.LightGray),
-            onProgressChange = { waveformProgress = it })
+            onProgressChange = { })
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 16.dp),
+                .padding(horizontal = 32.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -125,14 +161,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 text = state.recordingFileDuration.formatMilliSecondsToMinutes()
             )
         }
-        Spacer(modifier = Modifier.weight(1f))
-        AudioRecordingScreen(state = state, viewModel = viewModel)
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-fun AudioRecordingScreen(
+fun AudioRecorderScreen(
     modifier: Modifier = Modifier, state: MainScreenState, viewModel: MainViewModel
 ) {
     val context = LocalContext.current
@@ -160,14 +193,13 @@ fun AudioRecordingScreen(
             tint = if (state.isRecording) Color.Green else Color.LightGray
         )
 
-        Button(modifier = Modifier, onClick = {
+        Button(modifier = Modifier, enabled = !state.isPlaying, onClick = {
             if (state.isRecording) {
                 viewModel.processEvents(MainScreenEvents.StopRecordingClicked)
             } else {
                 //check if permission granted before recording
                 if (ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.RECORD_AUDIO
+                        context, Manifest.permission.RECORD_AUDIO
                     ) == PackageManager.PERMISSION_GRANTED
                 ) {
                     viewModel.processEvents(MainScreenEvents.StartRecordingClicked)
