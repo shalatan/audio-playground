@@ -65,7 +65,7 @@ class MainViewModel @Inject constructor(
     }
 
     private fun startRecording() {
-        File(application.cacheDir, "audio.mp3").also {
+        File(application.cacheDir, "recording.mp3").also {
             audioRecorderImpl.start(it)
             _state.value = _state.value.copy(isRecording = true, recordingFile = it)
         }
