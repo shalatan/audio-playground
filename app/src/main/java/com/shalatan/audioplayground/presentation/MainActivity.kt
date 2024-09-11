@@ -1,4 +1,4 @@
-package com.shalatan.audioplayground
+package com.shalatan.audioplayground.presentation
 
 import android.Manifest
 import android.os.Bundle
@@ -22,6 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,10 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.linc.audiowaveform.AudioWaveform
+import com.shalatan.audioplayground.R
 import com.shalatan.audioplayground.ui.theme.AudioPlaygroundTheme
 import com.shalatan.audioplayground.utils.formatMilliSecondsToMinutes
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -61,15 +63,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     val viewModel: MainViewModel = hiltViewModel()
+
     val state by viewModel.state.collectAsState()
+    val currentDuration by viewModel.currentDuration.collectAsState()
+    val waveformState by viewModel.waveformProgress.collectAsState()
 
     Log.e("Something: ", "currentState: $state")
+    Log.e("Something: ", "waveFormState: $waveformState")
 
-    var waveformProgress by remember { mutableStateOf(0f) }
+    var waveformProgress by remember { mutableFloatStateOf(waveformState) }
 
     Column(
-        modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.weight(1f))
         Text(
             modifier = Modifier.padding(bottom = 32.dp), text = "Name: ${state.recordingFile?.name}"
         )
@@ -78,9 +86,10 @@ fun MainScreen(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(enabled = state.recordingFile != null && !state.isRecording, onClick = {
-                viewModel.processEvents(MainScreenEvents.PlayClicked)
-            }) {
+            Button(enabled = state.recordingFile != null && !state.isRecording,
+                onClick = {
+                    viewModel.processEvents(MainScreenEvents.PlayClicked)
+                }) {
                 Text(text = "Play")
             }
             Button(onClick = {
@@ -89,16 +98,17 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 Text(text = "Stop")
             }
         }
-        Log.e("Something: ", "progress: $waveformProgress")
+        Spacer(modifier = Modifier.weight(1f))
+        Log.e("Something: ", " waveform: $waveformProgress")
         AudioWaveform(modifier = Modifier
             .fillMaxSize()
             .height(128.dp)
             .padding(top = 32.dp),
             amplitudes = state.waveformData,
-            progress = waveformProgress,
+            progress = waveformState,
             progressBrush = SolidColor(Color.Magenta),
             waveformBrush = SolidColor(Color.LightGray),
-            onProgressChange = { waveformProgress = it })
+            onProgressChange = { waveformProgress = it})
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,20 +116,16 @@ fun MainScreen(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (state.recordingFileDuration != null)
-                    state.recordingFileDuration!!.formatMilliSecondsToMinutes()
-                else
-                    "0:00"
+                text = currentDuration.formatMilliSecondsToMinutes()
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = if (state.recordingFileDuration != null) state.recordingFileDuration!!.formatMilliSecondsToMinutes() else "0:00"
+                text = state.recordingFileDuration.formatMilliSecondsToMinutes()
             )
         }
+        Spacer(modifier = Modifier.weight(1f))
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

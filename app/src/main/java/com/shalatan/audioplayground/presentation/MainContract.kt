@@ -1,4 +1,4 @@
-package com.shalatan.audioplayground
+package com.shalatan.audioplayground.presentation
 
 import java.io.File
 
@@ -6,9 +6,9 @@ data class MainScreenState(
     val isPlaying: Boolean = false,
     val isRecording: Boolean = false,
     val recordingFile: File? = null,
-    val recordingFileDuration: Int? = null,
     val error: String? = null,
-    val waveformData: List<Int> = emptyList()
+    val waveformData: List<Int> = emptyList(),
+    val recordingFileDuration: Int = 0
 )
 
 sealed class MainScreenEvents {

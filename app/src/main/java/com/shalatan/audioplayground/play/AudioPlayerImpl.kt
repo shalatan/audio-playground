@@ -17,9 +17,14 @@ class AudioPlayerImpl(
         MediaPlayer.create(context, file.toUri()).apply {
             player = this
             _duration = duration
+            setOnCompletionListener {
+                onAutoCompleted()
+            }
             start()
         }
     }
+
+    var onAutoCompleted: () -> Unit = { }
 
     override fun stop() {
         player?.stop()
@@ -28,7 +33,11 @@ class AudioPlayerImpl(
     }
 
     override fun getDuration(): Int {
-        Log.e("Something: ", "AudioDuration: ${_duration}")
         return _duration
     }
+
+    override fun getCurrentPosition(): Int {
+        return player?.currentPosition ?: 0
+    }
+
 }
